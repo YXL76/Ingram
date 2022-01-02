@@ -1,0 +1,17 @@
+[package]
+name = "ingram"
+version = "0.1.0"
+edition = "2021"
+authors = ["YXL76 <chenxin.lan.76@gmail.com>"]
+readme = "README.md"
+
+[dependencies]
+uefi-services = "0.10"
+
+[dependencies.log]
+version = "0.4"
+default-features = false
+
+[dependencies.uefi]
+version = "0.13"
+features = ["alloc", "exts", "logger"]
