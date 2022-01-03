@@ -12,13 +12,13 @@ IMAGE = File.join(BOOT_DIR, 'BOOT.EFI')
 mod = 'debug'
 ovmf = '/usr/share/edk2-ovmf/x64/OVMF.fd'
 qemu = 'qemu-system-x86_64'
-target = 'x86_64-unknown-uefi'
+target = 'x86_64-unknown-ingram'
 
 ARGV.each do |arg|
   arg.match(ARG_REG) do |m|
     case m[:name]
     when 'arch'
-      target = "#{m[:value]}-unknown-uefi"
+      target = "#{m[:value]}-unknown-ingram"
       # ovmf =
       qemu = "qemu-system-#{m[:value]}"
     when 'release'
