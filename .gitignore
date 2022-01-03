@@ -14,6 +14,15 @@ Cargo.lock
 
 /target
 
-
+# Image
 build
 !build/startup.nsh
+
+# yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+yarn-error.log
