@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.unstable"]
+  },
+  "lint": {
+    "files": {
+      "include": ["scripts/"]
+    },
+    "rules": {
+      "tags": ["recommended"],
+      "include": [
+        "camelcase",
+        "default-param-last",
+        "eqeqeq",
+        "no-eval",
+        "no-non-null-asserted-optional-chain",
+        "no-non-null-assertion"
+      ]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["scripts/"]
+    }
+  }
+}

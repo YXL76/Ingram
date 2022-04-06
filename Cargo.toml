@@ -6,9 +6,11 @@ authors = ["YXL76 <chenxin.lan.76@gmail.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
-[workspace]
-resolver = "2"
-members = ["kernel", "uefi"]
+[dependencies]
+bootloader = "0.10"
+spin = "0.9"
+uart_16550 = "0.2"
+x86_64 = "0.14"
 
 [profile.release]
 lto = true

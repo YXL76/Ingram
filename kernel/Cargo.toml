@@ -1,9 +1,0 @@
-[package]
-name = "ingram-kernel"
-version = "0.1.0"
-edition = "2021"
-authors = ["YXL76 <chenxin.lan.76@gmail.com>"]
-license = "MIT OR Apache-2.0"
-readme = "README.md"
-
-[dependencies]
