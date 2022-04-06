@@ -1,11 +1,8 @@
 {
   "name": "ingram",
   "version": "0.1.0",
-  "license": "MIT OR Apache-2.0",
-  "author": {
-    "email": "chenxin.lan.76@gmail.com",
-    "name": "YXL76"
-  },
+  "license": "(MIT OR Apache-2.0)",
+  "author": "YXL <chenxin.lan.76@gmail.com>",
   "scripts": {
     "build": "ruby scripts/build.rb --release",
     "build-dev": "ruby scripts/build.rb",
