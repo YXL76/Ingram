@@ -42,15 +42,21 @@ async function createDiskImages() {
     const cmd = [
         "cargo",
         "builder",
+
         "--kernel-manifest",
         kernelManifestPath,
+
         "--kernel-binary",
         kernelBinaryPath,
+
+        "--firmware",
+        "uefi",
+
         "--target-dir",
         TARGET_DIR,
+
         "--out-dir",
         kernelBinaryDir,
-        "--quiet",
     ];
     const build = Deno.run({
         cmd,

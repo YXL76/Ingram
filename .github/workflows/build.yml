@@ -44,4 +44,4 @@ jobs:
           rustup component add llvm-tools-preview
     
       - name: Build
-        run: deno run --unstable --allow-all scripts/run.ts
+        run: deno run --unstable --allow-all scripts/build.ts
