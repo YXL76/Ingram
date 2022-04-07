@@ -8,6 +8,7 @@ readme = "README.md"
 
 [dependencies]
 bootloader = "0.10"
+qemu-exit = "3.0"
 spin = "0.9"
 uart_16550 = "0.2"
 x86_64 = "0.14"

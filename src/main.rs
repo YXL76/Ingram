@@ -1,25 +1,22 @@
 #![no_std]
 #![no_main]
-#![feature(custom_test_frameworks)]
+#![feature(abi_x86_interrupt, custom_test_frameworks)]
 #![test_runner(test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 use {
     bootloader::{entry_point, BootInfo},
     core::panic::PanicInfo,
+    qemu_exit::QEMUExit,
 };
 
+mod interrupts;
 mod serial;
 
 entry_point!(kernel_main);
 
-fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    // turn the screen gray
-    if let Some(framebuffer) = boot_info.framebuffer.as_mut() {
-        for byte in framebuffer.buffer_mut() {
-            *byte = 0x90;
-        }
-    }
+fn kernel_main(_boot_info: &'static mut BootInfo) -> ! {
+    interrupts::init_idt();
 
     #[cfg(test)]
     test_main();
@@ -32,8 +29,24 @@ pub fn test_runner(tests: &[&dyn Testable]) {
     for test in tests {
         test.run();
     }
-    exit_qemu(QemuExitCode::Success);
+    QEMU_EXIT_HANDLE.exit_success();
 }
+
+#[cfg(not(test))]
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {}
+}
+
+#[cfg(test)]
+mod tests {
+    #[test_case]
+    fn trivial_assertion() {
+        assert_eq!(1, 1);
+    }
+}
+
+const QEMU_EXIT_HANDLE: qemu_exit::X86 = qemu_exit::X86::new(0xf4, 0x21);
 
 pub trait Testable {
     fn run(&self) -> ();
@@ -50,38 +63,10 @@ where
     }
 }
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
-
 #[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11,
-}
-
-pub fn exit_qemu(exit_code: QemuExitCode) -> ! {
-    let mut port = x86_64::instructions::port::Port::new(0xf4);
-    unsafe { port.write(exit_code as u32) };
-
-    loop {}
-}
-
-#[cfg(test)]
-mod tests {
-    #[test_case]
-    fn trivial_assertion() {
-        assert_eq!(1, 1);
-    }
+    QEMU_EXIT_HANDLE.exit_failure();
 }

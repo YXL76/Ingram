@@ -20,5 +20,5 @@ indent_size = 2
 [*.jsonc]
 indent_size = 2
 
-[*.rb]
+[*.ts]
 indent_size = 2
