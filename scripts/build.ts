@@ -18,92 +18,87 @@ const TARGET = "x86_64-unknown-none";
 
 export const ROOT_DIR = Deno.cwd();
 const TARGET_DIR = join(ROOT_DIR, "target");
+const TARGET_BIN_DIR = join(TARGET_DIR, TARGET, MODE);
 
-export const imagePath = await (async () => {
+export const images = await (async () => {
   {
-    const cmd = ["cargo", "build"];
+    const cmd = ["cargo"];
     if (MODE === "release") cmd.push("--release");
+    if (TEST) cmd.push("test", "--no-run");
+    else cmd.push("build");
 
-    let kernelBinaryPath: string;
-    if (TEST) {
-      cmd.push("--tests");
+    const build = Deno.run({ cmd, stdout: "inherit", stderr: "inherit" });
+    if (!(await build.status()).success) throw new Error("build failed");
 
-      const plan = Deno.run({
-        cmd: [...cmd, "-Z", "unstable-options", "--build-plan"],
-        stdout: "piped",
-        stderr: "inherit",
-      });
+    const mainBin = join(TARGET_BIN_DIR, PKG);
+    const kernelBinaryPaths: string[] = [];
+    if (!TEST) kernelBinaryPaths.push(mainBin);
+    else {
+      cmd.push("--message-format", "json");
+      const res = Deno.run({ cmd, stdout: "piped", stderr: "inherit" });
+      if (!(await res.status()).success) throw new Error("build failed");
 
-      const { invocations } = JSON.parse(
-        textDecoder.decode(await plan.output()),
-      ) as { invocations: { package_name: string; outputs: string[] }[] };
+      for (const line of textDecoder.decode(await res.output()).split("\n")) {
+        if (!line) continue;
 
-      const pkg = invocations.find((i) => i.package_name === PKG);
-      if (!pkg) throw new Error("Not Found");
+        const json = JSON.parse(line) as { executable?: null | string };
+        if (typeof json.executable !== "string") continue;
+        if (json.executable === mainBin) continue;
 
-      kernelBinaryPath = pkg.outputs[0];
-    } else {
-      kernelBinaryPath = join(TARGET_DIR, TARGET, MODE, PKG);
+        kernelBinaryPaths.push(json.executable);
+      }
+
+      // Build tests also build the `main.rs`. Ignore it.
+      const mainSize = (await Deno.stat(mainBin)).size;
+      for (let i = kernelBinaryPaths.length - 1; i >= 0; --i) {
+        if ((await Deno.stat(kernelBinaryPaths[i])).size === mainSize) {
+          kernelBinaryPaths.splice(i, 1);
+          break;
+        }
+      }
     }
 
-    const build = Deno.run({
-      cmd,
-      stdout: "inherit",
-      stderr: "inherit",
-    });
-    if (!(await build.status()).success) {
-      throw new Error("build failed");
-    }
-
-    return createDiskImages(kernelBinaryPath);
+    return createDiskImages(kernelBinaryPaths);
   }
 })();
 
 /**
  * Copies from {@link https://github.com/rust-osdev/bootloader/blob/a1286cab072ad03a3d302be9ea694e3f0d72aa9e/examples/test_framework/boot/src/main.rs#L70}
  */
-async function createDiskImages(kernelBinaryPath: string) {
+async function createDiskImages(kernelBinaryPaths: string[]) {
   console.log("Creating disk images...");
 
-  const kernelBinaryDir = dirname(kernelBinaryPath);
-  const kernelManifestPath = join(ROOT_DIR, "Cargo.toml");
+  const kernelManifest = join(ROOT_DIR, "Cargo.toml");
 
-  const cmd = [
-    "cargo",
-    "builder",
+  const images = [];
+  for (const kernelBinary of kernelBinaryPaths) {
+    const outDir = dirname(kernelBinary);
 
-    "--kernel-manifest",
-    kernelManifestPath,
+    const build = Deno.run({
+      // deno-fmt-ignore
+      cmd: [
+        "cargo", "builder",
+        "--kernel-manifest", kernelManifest,
+        "--kernel-binary", kernelBinary,
+        "--firmware", "uefi",
+        "--target-dir", TARGET_DIR,
+        "--out-dir", outDir,
+      ],
+      cwd: dirname(await locateBootloader()),
+      stdout: "inherit",
+      stderr: "inherit",
+    });
 
-    "--kernel-binary",
-    kernelBinaryPath,
+    const status = await build.status();
+    if (!status.success) throw new Error("build failed");
 
-    "--firmware",
-    "uefi",
+    const image = join(outDir, `boot-uefi-${basename(kernelBinary)}.img`);
+    await Deno.stat(image);
+    console.log(`Created disk image: ${image}`);
+    images.push(image);
+  }
 
-    "--target-dir",
-    TARGET_DIR,
-
-    "--out-dir",
-    kernelBinaryDir,
-  ];
-  const build = Deno.run({
-    cmd,
-    cwd: dirname(await locateBootloader()),
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  const status = await build.status();
-  if (!status.success) throw new Error("build failed");
-
-  const image = join(
-    kernelBinaryDir,
-    `boot-uefi-${basename(kernelBinaryPath)}.img`,
-  );
-  await Deno.stat(image);
-  console.log(`Created disk image: ${image}`);
-  return image;
+  return images;
 }
 
 /**
