@@ -1,6 +1,7 @@
 use {
     spin::{Lazy, Mutex},
     uart_16550::SerialPort,
+    x86_64::instructions::interrupts::without_interrupts,
 };
 
 pub static SERIAL1: Lazy<Mutex<SerialPort>> = Lazy::new(|| {
@@ -13,12 +14,7 @@ pub static SERIAL1: Lazy<Mutex<SerialPort>> = Lazy::new(|| {
 pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
 
-    x86_64::instructions::interrupts::without_interrupts(|| {
-        SERIAL1
-            .lock()
-            .write_fmt(args)
-            .expect("Printing to serial failed");
-    });
+    without_interrupts(|| SERIAL1.lock().write_fmt(args).unwrap());
 }
 
 /// Prints to the host through the serial interface.

@@ -6,7 +6,8 @@
 
 use {
     bootloader::{entry_point, BootInfo},
-    ingram::{gdt, println, QEMU_EXIT_HANDLE},
+    core::ptr::read_volatile,
+    ingram::{constant::DOUBLE_FAULT_IST_INDEX, gdt, println, QEMU_EXIT_HANDLE},
     qemu_exit::QEMUExit,
     spin::Lazy,
     x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
@@ -27,13 +28,13 @@ fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
 fn stack_overflow() {
     stack_overflow(); // for each recursion, the return address is pushed
     const ZERO: i32 = 0;
-    volatile::Volatile::new(&ZERO).read(); // prevent tail recursion optimizations
+    unsafe { read_volatile(&ZERO) }; // prevent tail recursion optimizations
 }
 
 static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let mut idt = InterruptDescriptorTable::new();
     let double_entry = idt.double_fault.set_handler_fn(test_double_fault_handler);
-    unsafe { double_entry.set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX) };
+    unsafe { double_entry.set_stack_index(DOUBLE_FAULT_IST_INDEX) };
     idt
 });
 

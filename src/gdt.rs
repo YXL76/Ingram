@@ -1,4 +1,5 @@
 use {
+    crate::{constant::DOUBLE_FAULT_IST_INDEX, println},
     spin::Lazy,
     x86_64::{
         instructions::{
@@ -7,6 +8,7 @@ use {
         },
         structures::{
             gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
+            paging::{PageSize, Size4KiB},
             tss::TaskStateSegment,
         },
         VirtAddr,
@@ -19,14 +21,15 @@ pub fn init() {
         CS::set_reg(GDT.1.code);
         load_tss(GDT.1.tss);
     }
+
+    println!("GDT loaded at {:p}", &GDT.0)
 }
 
-pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
-
 static TSS: Lazy<TaskStateSegment> = Lazy::new(|| {
+    const STACK_SIZE: usize = (Size4KiB::SIZE * 5) as usize;
+
     let mut tss = TaskStateSegment::new();
     tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
-        const STACK_SIZE: usize = 4096 * 5;
         static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
 
         let stack_start = VirtAddr::from_ptr(unsafe { &STACK });

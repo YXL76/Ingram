@@ -1,4 +1,4 @@
-import { images, join, ROOT_DIR, TEST } from "./build.ts";
+import {images, join, ROOT_DIR, TEST} from "./build.ts";
 
 /** Follow {@link https://gil0mendes.io/blog/an-efi-app-a-bit-rusty/} */
 // deno-fmt-ignore
@@ -13,7 +13,7 @@ const cmd = [
   // Use a modern machine, with acceleration if possible.
   "-machine", "q35,accel=kvm:tcg",
   // Allocate some memory
-  "-m", "4G",
+  "-m", "2G",
   // Set up OVMF
   "-bios", join(ROOT_DIR, "OVMF.fd"),
   // Enable serial
@@ -24,7 +24,10 @@ const cmd = [
   "-display", "none",
   //  prevent attempting a PXE (network) boot when no boot disk is found
   "-net", "none",
- 
+  // Passthrough host CPU
+  "-cpu", "host",
+  // Only support single core
+  "-smp", "1,maxcpus=1"
 ];
 
 if (TEST) {

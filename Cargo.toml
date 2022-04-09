@@ -8,17 +8,17 @@ readme = "README.md"
 
 [dependencies]
 acpi = "4.1"
+bit_field = "0.10"
 qemu-exit = "3.0"
+raw-cpuid = "10.3"
 spin = "0.9"
 uart_16550 = "0.2"
+x2apic = "0.4"
 x86_64 = "0.14"
 
 [dependencies.bootloader]
 git = "https://github.com/YXL76/bootloader"
 branch = "ingram"
-
-[dev-dependencies]
-volatile = "0.4"
 
 [package.metadata.bootloader]
 map-physical-memory = true

@@ -1,5 +1,10 @@
 #![no_std]
-#![feature(abi_x86_interrupt, alloc_error_handler, const_mut_refs)]
+#![feature(
+    abi_x86_interrupt,
+    alloc_error_handler,
+    const_mut_refs,
+    type_alias_impl_trait
+)]
 #![cfg_attr(test, no_main)]
 #![cfg_attr(test, feature(custom_test_frameworks))]
 #![cfg_attr(test, test_runner(test_runner))]
@@ -7,26 +12,35 @@
 
 extern crate alloc;
 
+mod acpi;
 mod allocator;
+mod apic;
+pub mod constant;
 pub mod gdt;
-mod interrupts;
+mod interrupt;
 mod memory;
 pub mod uart;
 
-use {bootloader::BootInfo, core::panic::PanicInfo, qemu_exit::QEMUExit, x86_64::VirtAddr};
+use {bootloader::BootInfo, constant::PHYS_OFFSET, core::panic::PanicInfo, qemu_exit::QEMUExit};
 
 pub fn init(boot_info: &'static mut BootInfo) {
-    let physical_memory_offset = boot_info.physical_memory_offset.into_option().unwrap();
-    let physical_memory_offset = VirtAddr::new(physical_memory_offset);
+    assert_eq!(
+        PHYS_OFFSET.as_u64(),
+        boot_info.physical_memory_offset.into_option().unwrap()
+    );
+    let rsdp_addr = boot_info.rsdp_addr.into_option().unwrap();
 
     gdt::init();
-    interrupts::init(boot_info.rsdp_addr.into_option().unwrap());
 
-    let mut mapper = unsafe { memory::init(physical_memory_offset) };
-    let mut frame_allocator =
-        unsafe { memory::GlobalFrameAllocator::init(&boot_info.memory_regions) };
+    interrupt::init();
+
+    let (mut mapper, mut frame_allocator) = unsafe { memory::init(&boot_info.memory_regions) };
 
     allocator::init(&mut mapper, &mut frame_allocator);
+
+    let (hpet_info, apic) = acpi::init(rsdp_addr);
+
+    // apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
 }
 
 pub fn hlt_loop() -> ! {

@@ -2,16 +2,15 @@ mod hole;
 mod linked_list_allocator;
 
 use {
+    crate::{memory::alloc_virt, println},
     hole::HoleList,
     linked_list_allocator::LockedHeap,
-    x86_64::{
-        structures::paging::{FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB},
-        VirtAddr,
-    },
+    x86_64::structures::paging::{FrameAllocator, Mapper, PageSize, Size4KiB},
 };
 
-pub const HEAP_START: usize = 0x_4444_4444_0000;
-pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
+pub const HEAP_START: u64 = 0x_4444_4444_0 * Size4KiB::SIZE;
+pub const HEAP_SIZE: u64 = 4 * 1024 * Size4KiB::SIZE; /* 16 MiB */
+pub const HEAP_END: u64 = HEAP_START + HEAP_SIZE - 1;
 
 #[global_allocator]
 static ALLOCATOR: LockedHeap = LockedHeap::empty();
@@ -20,23 +19,15 @@ pub fn init(
     mapper: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
 ) {
-    let page_range = {
-        let heap_start = VirtAddr::new(HEAP_START as u64);
-        let heap_end = heap_start + HEAP_SIZE - 1u64;
-        let heap_start_page = Page::containing_address(heap_start);
-        let heap_end_page = Page::containing_address(heap_end);
-        Page::range_inclusive(heap_start_page, heap_end_page)
+    alloc_virt(mapper, frame_allocator, HEAP_START, HEAP_END, None);
+
+    unsafe {
+        ALLOCATOR
+            .lock()
+            .init(HEAP_START as usize, HEAP_SIZE as usize)
     };
 
-    for page in page_range {
-        let frame = frame_allocator.allocate_frame().unwrap();
-        let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
-        unsafe { mapper.map_to(page, frame, flags, frame_allocator) }
-            .unwrap()
-            .flush();
-    }
-
-    unsafe { ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE) };
+    println!("Heap allocated, from {:#x} to {:#x}", HEAP_START, HEAP_END);
 }
 
 /// Align downwards. Returns the greatest x with alignment `align`
