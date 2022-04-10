@@ -65,7 +65,7 @@ pub fn alloc_virt(
 
     for page in page_range {
         let frame = frame_allocator.allocate_frame().unwrap();
-        let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+        let flags = PageTableFlags::PRESENT | flags.unwrap_or(PageTableFlags::WRITABLE);
         unsafe { mapper.map_to(page, frame, flags, frame_allocator) }
             .unwrap()
             .flush();
@@ -89,9 +89,7 @@ pub fn alloc_phys(
 
     for frame in frame_range {
         let flags = PageTableFlags::PRESENT
-            | flags
-                .or(Some(PageTableFlags::WRITABLE | PageTableFlags::NO_CACHE))
-                .unwrap();
+            | flags.unwrap_or(PageTableFlags::WRITABLE | PageTableFlags::NO_CACHE);
         unsafe { mapper.identity_map(frame, flags, frame_allocator) }
             .unwrap()
             .flush();

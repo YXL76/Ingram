@@ -1,11 +1,12 @@
 /// https://wiki.osdev.org/ACPI
 use {
-    crate::{memory::phys2virt, println},
+    crate::{constant::LOCAL_APIC_ID, memory::phys2virt, println},
     acpi::{
         platform::{interrupt::Apic, ProcessorInfo},
         AcpiHandler, AcpiTables, HpetInfo, InterruptModel, PciConfigRegions, PlatformInfo,
     },
     core::ptr::NonNull,
+    x86_64::structures::paging::{PageSize, Size4KiB},
 };
 
 pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic) {
@@ -18,7 +19,7 @@ pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic) {
         power_profile,
         interrupt_model,
         processor_info,
-        pm_timer,
+        pm_timer: _,
     } = acpi_tables.platform_info().unwrap();
 
     println!("Power profile: {:?}", power_profile);
@@ -27,10 +28,8 @@ pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic) {
         boot_processor: processor,
         application_processors: app_processor,
     } = processor_info.unwrap();
+    assert_eq!(processor.local_apic_id, LOCAL_APIC_ID as u32);
     assert!(app_processor.is_empty(), "Do not support multi-core");
-    println!("Processor: {:?}", processor);
-
-    println!("PM timer: {:?}", pm_timer.unwrap());
 
     (
         HpetInfo::new(&acpi_tables).unwrap(),
@@ -50,11 +49,16 @@ impl AcpiHandler for AcpiHdl {
         physical_address: usize,
         size: usize,
     ) -> acpi::PhysicalMapping<Self, T> {
+        let page_size = Size4KiB::SIZE as usize;
+        // address maybe not aligned, so we align it manually
+        let aligned_start = physical_address & !(page_size - 1);
+        let aligned_end = (physical_address + size + page_size - 1) & !(page_size - 1);
+
         acpi::PhysicalMapping::new(
             physical_address,
             NonNull::new_unchecked(phys2virt(physical_address as u64).as_u64() as *mut _),
             size,
-            size,
+            aligned_end - aligned_start,
             Self,
         )
     }

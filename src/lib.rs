@@ -40,7 +40,7 @@ pub fn init(boot_info: &'static mut BootInfo) {
 
     let (hpet_info, apic) = acpi::init(rsdp_addr);
 
-    // apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
+    apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
 }
 
 pub fn hlt_loop() -> ! {
