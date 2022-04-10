@@ -3,7 +3,7 @@ use {
     spin::Lazy,
     x86_64::{
         instructions::{
-            segmentation::{Segment, CS},
+            segmentation::{Segment, CS, DS, ES, SS},
             tables::load_tss,
         },
         structures::{
@@ -19,6 +19,9 @@ pub fn init() {
     GDT.0.load();
     unsafe {
         CS::set_reg(GDT.1.code);
+        SS::set_reg(GDT.1.data);
+        DS::set_reg(GDT.1.data);
+        ES::set_reg(GDT.1.data);
         load_tss(GDT.1.tss);
     }
 
@@ -42,11 +45,13 @@ static TSS: Lazy<TaskStateSegment> = Lazy::new(|| {
 static GDT: Lazy<(GlobalDescriptorTable, Selectors)> = Lazy::new(|| {
     let mut gdt = GlobalDescriptorTable::new();
     let code = gdt.add_entry(Descriptor::kernel_code_segment());
+    let data = gdt.add_entry(Descriptor::kernel_data_segment());
     let tss = gdt.add_entry(Descriptor::tss_segment(&TSS));
-    (gdt, Selectors { code, tss })
+    (gdt, Selectors { code, data, tss })
 });
 
 struct Selectors {
     code: SegmentSelector,
+    data: SegmentSelector,
     tss: SegmentSelector,
 }
