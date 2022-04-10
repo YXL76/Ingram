@@ -1,20 +1,29 @@
 use {
-    spin::{Lazy, Mutex},
+    spin::{Mutex, Once},
     uart_16550::SerialPort,
     x86_64::instructions::interrupts::without_interrupts,
 };
 
-pub static SERIAL1: Lazy<Mutex<SerialPort>> = Lazy::new(|| {
-    let mut serial_port = unsafe { SerialPort::new(0x3F8) };
-    serial_port.init();
-    Mutex::new(serial_port)
-});
+pub static SERIAL1: Once<Mutex<SerialPort>> = Once::new();
+
+pub fn init() {
+    SERIAL1.call_once(|| {
+        let mut serial_port = unsafe { SerialPort::new(0x3F8) };
+        serial_port.init();
+        Mutex::new(serial_port)
+    });
+}
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
 
-    without_interrupts(|| SERIAL1.lock().write_fmt(args).unwrap());
+    without_interrupts(|| {
+        unsafe { SERIAL1.get_unchecked() }
+            .lock()
+            .write_fmt(args)
+            .unwrap()
+    });
 }
 
 /// Prints to the host through the serial interface.

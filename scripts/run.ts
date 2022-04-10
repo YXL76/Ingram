@@ -1,4 +1,4 @@
-import {images, join, ROOT_DIR, TEST} from "./build.ts";
+import { images, join, ROOT_DIR, TEST } from "./build.ts";
 
 /** Follow {@link https://gil0mendes.io/blog/an-efi-app-a-bit-rusty/} */
 // deno-fmt-ignore
@@ -25,7 +25,7 @@ const cmd = [
   //  prevent attempting a PXE (network) boot when no boot disk is found
   "-net", "none",
   // Passthrough host CPU
-  "-cpu", "host",
+  // "-cpu", "host",
   // Only support single core
   "-smp", "1,maxcpus=1"
 ];

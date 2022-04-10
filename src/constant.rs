@@ -6,12 +6,66 @@ pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 pub const LOCAL_APIC_ID: u8 = 0;
 
-pub const INT_OFFSET: u8 = 32;
+pub const LOCAL_APIC_TIMER_INIT_COUNT: u32 = u32::MAX;
 
-const LOCAL_APIC_INT_OFFSET: u8 = 128;
+pub const HPET_INTERVAL: u32 = 20; // 20ms
 
-pub const LOCAL_APIC_TIMER: u8 = LOCAL_APIC_INT_OFFSET;
+#[repr(u8)]
+pub enum IOApicInt {
+    Timer = IOApicInt::OFFSET,
+    Keyboard,
+    Cascade,
+    COM2,
+    COM1,
+    LPT2,
+    FloppyDisk,
+    Spurious,
+    RTC,
+    Free9,
+    Free10,
+    Free11,
+    Mouse,
+    FPU,
+    PrimaryATA,
+    SecondaryATA,
+}
 
-pub const LOCAL_APIC_ERROR: u8 = LOCAL_APIC_INT_OFFSET + 1;
+impl IOApicInt {
+    pub const OFFSET: u8 = 32;
+}
 
-pub const LOCAL_APIC_SPURIOUS: u8 = LOCAL_APIC_INT_OFFSET + 2;
+impl From<IOApicInt> for usize {
+    fn from(this: IOApicInt) -> Self {
+        this as usize
+    }
+}
+
+#[repr(u8)]
+pub enum LocalApicInt {
+    Timer = LocalApicInt::OFFSET,
+    Keyboard,
+    Cascade,
+    COM2,
+    COM1,
+    LPT2,
+    FloppyDisk,
+    Spurious,
+    RTC,
+    Free9,
+    Error,
+    Free11,
+    Mouse,
+    FPU,
+    PrimaryATA,
+    SecondaryATA,
+}
+
+impl LocalApicInt {
+    pub const OFFSET: u8 = 128;
+}
+
+impl From<LocalApicInt> for usize {
+    fn from(this: LocalApicInt) -> Self {
+        this as usize
+    }
+}

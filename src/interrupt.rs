@@ -2,17 +2,19 @@
 /// https://wiki.osdev.org/NMI
 use {
     crate::{
-        apic::LOCAL_APIC,
+        apic::{IO_APICS, LOCAL_APIC},
         constant::{
-            DOUBLE_FAULT_IST_INDEX, LOCAL_APIC_ERROR, LOCAL_APIC_SPURIOUS, LOCAL_APIC_TIMER,
+            IOApicInt, LocalApicInt, DOUBLE_FAULT_IST_INDEX, HPET_INTERVAL,
+            LOCAL_APIC_TIMER_INIT_COUNT,
         },
-        println,
+        print, println,
+        uart::SERIAL1,
     },
     spin::Lazy,
     x86_64::{
         instructions::port::Port,
         set_general_handler,
-        structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
+        structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
     },
 };
 
@@ -25,12 +27,7 @@ static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let mut idt = InterruptDescriptorTable::new();
 
     fn my_general_handler(stack_frame: InterruptStackFrame, index: u8, error_code: Option<u64>) {
-        todo!(
-            "handle irq {} {:?} code: {:?}",
-            index,
-            stack_frame,
-            error_code
-        )
+        todo!("irq {} {:?} code: {:?}", index, stack_frame, error_code)
     }
 
     // set all entries
@@ -41,19 +38,16 @@ static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let double_entry = idt.double_fault.set_handler_fn(double_fault_handler);
     unsafe { double_entry.set_stack_index(DOUBLE_FAULT_IST_INDEX) };
 
-    idt.page_fault.set_handler_fn(page_fault_handler);
+    idt[IOApicInt::Timer.into()].set_handler_fn(io_apic_timer_handler);
+    idt[IOApicInt::COM1.into()].set_handler_fn(io_apic_com1_handler);
 
-    idt[36].set_handler_fn(io_apic_com1_handler);
-
-    idt[LOCAL_APIC_TIMER.into()].set_handler_fn(apic_timer_handler);
-    idt[LOCAL_APIC_ERROR.into()].set_handler_fn(apic_timer_handler);
-    idt[LOCAL_APIC_SPURIOUS.into()].set_handler_fn(apic_timer_handler);
+    idt[LocalApicInt::Timer.into()].set_handler_fn(local_apic_timer_handler);
 
     idt
 });
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: InterruptStackFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    println!("EXCEPTION: BREAKPOINT\n{:#?}\n", stack_frame);
 }
 
 extern "x86-interrupt" fn double_fault_handler(
@@ -63,27 +57,29 @@ extern "x86-interrupt" fn double_fault_handler(
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
-pub extern "x86-interrupt" fn page_fault_handler(
-    stack_frame: InterruptStackFrame,
-    error_code: PageFaultErrorCode,
-) {
-    let pl =
-        x86_64::registers::segmentation::SegmentSelector(stack_frame.code_segment as u16).rpl();
+extern "x86-interrupt" fn io_apic_timer_handler(_stack_frame: InterruptStackFrame) {
+    unsafe {
+        let mut local_apic = LOCAL_APIC.get_unchecked().lock();
+        let diff = LOCAL_APIC_TIMER_INIT_COUNT - local_apic.timer_current(); // ticks of 20ms
+        local_apic.set_timer_initial(diff / HPET_INTERVAL * 1000); // 1s, may cause overflow
 
-    println!(
-        "page fault: frame {:?}, error code: {:?} pl: {:?}",
-        stack_frame, error_code, pl
-    );
+        IO_APICS.get_unchecked().lock().disable_irq(0); // "This should be called only once."
+        local_apic.end_of_interrupt();
+    };
 }
 
-pub extern "x86-interrupt" fn io_apic_com1_handler(_stack_frame: InterruptStackFrame) {
-    crate::print!(".");
-    unsafe { LOCAL_APIC.get().unwrap().lock().end_of_interrupt() };
+extern "x86-interrupt" fn io_apic_com1_handler(_stack_frame: InterruptStackFrame) {
+    use core::fmt::Write;
+
+    let mut serial1 = unsafe { SERIAL1.get_unchecked() }.lock();
+    let ch = serial1.receive() as char;
+    serial1.write_char(ch).unwrap();
+    unsafe { LOCAL_APIC.get_unchecked().lock().end_of_interrupt() };
 }
 
-pub extern "x86-interrupt" fn apic_timer_handler(_stack_frame: InterruptStackFrame) {
-    crate::print!(".");
-    unsafe { LOCAL_APIC.get().unwrap().lock().end_of_interrupt() };
+extern "x86-interrupt" fn local_apic_timer_handler(_stack_frame: InterruptStackFrame) {
+    print!(".");
+    unsafe { LOCAL_APIC.get_unchecked().lock().end_of_interrupt() };
 }
 
 pub fn nmi_enable() {

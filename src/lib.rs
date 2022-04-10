@@ -24,6 +24,8 @@ pub mod uart;
 use {bootloader::BootInfo, constant::PHYS_OFFSET, core::panic::PanicInfo, qemu_exit::QEMUExit};
 
 pub fn init(boot_info: &'static mut BootInfo) {
+    uart::init();
+
     assert_eq!(
         PHYS_OFFSET.as_u64(),
         boot_info.physical_memory_offset.into_option().unwrap()

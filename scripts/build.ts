@@ -23,9 +23,9 @@ const TARGET_BIN_DIR = join(TARGET_DIR, TARGET, MODE);
 export const images = await (async () => {
   {
     const cmd = ["cargo"];
-    if (MODE === "release") cmd.push("--release");
     if (TEST) cmd.push("test", "--no-run");
     else cmd.push("build");
+    if (MODE === "release") cmd.push("--release");
 
     const build = Deno.run({ cmd, stdout: "inherit", stderr: "inherit" });
     if (!(await build.status()).success) throw new Error("build failed");

@@ -5,15 +5,12 @@
 
 use {
     bootloader::{entry_point, BootInfo},
-    ingram::{hlt_loop, init, println},
+    ingram::{hlt_loop, init},
 };
 
 entry_point!(kernel_main);
 
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    println!("Kernel starts");
-    // serial_println!("{:#?}", boot_info);
-
     init(boot_info);
 
     hlt_loop();
