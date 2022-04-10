@@ -113,13 +113,15 @@ fn init_io_apics(
             max_entry,
         };
 
-        io_apics.enable_irq(0);
-        io_apics.enable_irq(4);
+        io_apics.enable_irq(IOApicInt::Timer);
+        println!("IRQ {:#?} enabled", IOApicInt::Timer);
+        io_apics.enable_irq(IOApicInt::COM1);
+        println!("IRQ {:#?} enabled", IOApicInt::COM1);
 
         Mutex::new(io_apics)
     });
 
-    println!("I/O apics init");
+    println!("I/O apics initialized");
 }
 
 pub struct IoApics {
@@ -130,28 +132,29 @@ pub struct IoApics {
 }
 
 impl IoApics {
-    fn enable_irq(&mut self, irq: u8) {
+    fn enable_irq(&mut self, irq: IOApicInt) {
         let gsi = self.find_io_apic(&irq);
 
         let mut entry = unsafe { self.io_apic.table_entry(gsi) };
         // let mut entry = RedirectionTableEntry::default();
         // entry.set_mode(IrqMode::Fixed);
         // entry.set_flags(IrqFlags::LEVEL_TRIGGERED | IrqFlags::LOW_ACTIVE | IrqFlags::MASKED);
-        entry.set_vector(irq + IOApicInt::OFFSET);
+        entry.set_vector(irq as u8);
         entry.set_dest(LOCAL_APIC_ID);
         unsafe { self.io_apic.set_table_entry(gsi, entry) };
 
         unsafe { self.io_apic.enable_irq(gsi) };
     }
 
-    pub fn disable_irq(&mut self, irq: u8) {
+    pub fn disable_irq(&mut self, irq: IOApicInt) {
         let gsi = self.find_io_apic(&irq);
 
         unsafe { self.io_apic.disable_irq(gsi) };
     }
 
-    fn find_io_apic(&mut self, irq: &u8) -> u8 {
-        let gsi = *self.irq_mappings.get(irq).unwrap_or(irq);
+    fn find_io_apic(&mut self, irq: &IOApicInt) -> u8 {
+        let irq = *irq as u8 - IOApicInt::OFFSET;
+        let gsi = *self.irq_mappings.get(&irq).unwrap_or(&irq);
         assert!(gsi >= self.gsi_base && gsi <= self.gsi_base + self.max_entry);
         gsi
     }

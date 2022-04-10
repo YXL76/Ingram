@@ -8,8 +8,9 @@ pub const LOCAL_APIC_ID: u8 = 0;
 
 pub const LOCAL_APIC_TIMER_INIT_COUNT: u32 = u32::MAX;
 
-pub const HPET_INTERVAL: u32 = 20; // 20ms
+pub const HPET_INTERVAL: u32 = 10; // 10ms
 
+#[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum IOApicInt {
     Timer = IOApicInt::OFFSET,
@@ -40,6 +41,7 @@ impl From<IOApicInt> for usize {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum LocalApicInt {
     Timer = LocalApicInt::OFFSET,
@@ -53,6 +55,7 @@ pub enum LocalApicInt {
     RTC,
     Free9,
     Error,
+    // Spec
     Free11,
     Mouse,
     FPU,

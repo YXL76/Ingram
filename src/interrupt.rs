@@ -61,9 +61,12 @@ extern "x86-interrupt" fn io_apic_timer_handler(_stack_frame: InterruptStackFram
     unsafe {
         let mut local_apic = LOCAL_APIC.get_unchecked().lock();
         let diff = LOCAL_APIC_TIMER_INIT_COUNT - local_apic.timer_current(); // ticks of 20ms
-        local_apic.set_timer_initial(diff / HPET_INTERVAL * 1000); // 1s, may cause overflow
+        local_apic.set_timer_initial(diff / HPET_INTERVAL * 500); // 500ms, may cause overflow
 
-        IO_APICS.get_unchecked().lock().disable_irq(0); // "This should be called only once."
+        IO_APICS
+            .get_unchecked()
+            .lock()
+            .disable_irq(IOApicInt::Timer); // This should be called only once.
         local_apic.end_of_interrupt();
     };
 }
