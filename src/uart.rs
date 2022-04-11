@@ -1,16 +1,12 @@
-use {
-    spin::{Mutex, Once},
-    uart_16550::SerialPort,
-    x86_64::instructions::interrupts::without_interrupts,
-};
+use {spin::Once, uart_16550::SerialPort, x86_64::instructions::interrupts::without_interrupts};
 
-pub static SERIAL1: Once<Mutex<SerialPort>> = Once::new();
+pub static SERIAL1: Once<SerialPort> = Once::new();
 
 pub fn init() {
     SERIAL1.call_once(|| {
         let mut serial_port = unsafe { SerialPort::new(0x3F8) };
         serial_port.init();
-        Mutex::new(serial_port)
+        serial_port
     });
 }
 
@@ -19,8 +15,7 @@ pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
 
     without_interrupts(|| {
-        unsafe { SERIAL1.get_unchecked() }
-            .lock()
+        unsafe { &mut *SERIAL1.as_mut_ptr() }
             .write_fmt(args)
             .unwrap()
     });

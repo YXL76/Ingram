@@ -59,14 +59,11 @@ extern "x86-interrupt" fn double_fault_handler(
 
 extern "x86-interrupt" fn io_apic_timer_handler(_stack_frame: InterruptStackFrame) {
     unsafe {
-        let mut local_apic = LOCAL_APIC.get_unchecked().lock();
+        let local_apic = &mut *LOCAL_APIC.as_mut_ptr();
         let diff = LOCAL_APIC_TIMER_INIT_COUNT - local_apic.timer_current(); // ticks of 20ms
         local_apic.set_timer_initial(diff / HPET_INTERVAL * 500); // 500ms, may cause overflow
 
-        IO_APICS
-            .get_unchecked()
-            .lock()
-            .disable_irq(IOApicInt::Timer); // This should be called only once.
+        (&mut *IO_APICS.as_mut_ptr()).disable_irq(IOApicInt::Timer); // This should be called only once.
         local_apic.end_of_interrupt();
     };
 }
@@ -74,15 +71,15 @@ extern "x86-interrupt" fn io_apic_timer_handler(_stack_frame: InterruptStackFram
 extern "x86-interrupt" fn io_apic_com1_handler(_stack_frame: InterruptStackFrame) {
     use core::fmt::Write;
 
-    let mut serial1 = unsafe { SERIAL1.get_unchecked() }.lock();
+    let serial1 = unsafe { &mut *SERIAL1.as_mut_ptr() };
     let ch = serial1.receive() as char;
     serial1.write_char(ch).unwrap();
-    unsafe { LOCAL_APIC.get_unchecked().lock().end_of_interrupt() };
+    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).end_of_interrupt() };
 }
 
 extern "x86-interrupt" fn local_apic_timer_handler(_stack_frame: InterruptStackFrame) {
     print!(".");
-    unsafe { LOCAL_APIC.get_unchecked().lock().end_of_interrupt() };
+    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).end_of_interrupt() };
 }
 
 pub fn nmi_enable() {

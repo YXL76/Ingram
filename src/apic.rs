@@ -17,7 +17,7 @@ use {
     alloc::collections::BTreeMap,
     bit_field::BitField,
     core::ptr::{read_volatile, write_volatile},
-    spin::{Mutex, Once},
+    spin::Once,
     x2apic::{
         ioapic::IoApic,
         lapic::{IpiDestMode, LocalApic, LocalApicBuilder, TimerDivide, TimerMode},
@@ -46,7 +46,7 @@ pub fn init(
     init_io_apics(mapper, frame_allocator, &apic);
     init_hpet(mapper, frame_allocator, &hpet_info);
 
-    unsafe { LOCAL_APIC.get_unchecked().lock().enable() };
+    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).enable() };
     nmi_enable();
     interrupts::enable();
     // wait for [crete::interrupt::io_apic_timer_handler]
@@ -55,7 +55,7 @@ pub fn init(
     println!("Interrupts enabled");
 }
 
-pub static LOCAL_APIC: Once<Mutex<LocalApic>> = Once::new();
+pub static LOCAL_APIC: Once<LocalApic> = Once::new();
 
 fn init_local_apic() {
     // Do not provide xapic base address, it is only used in xapic.
@@ -76,10 +76,10 @@ fn init_local_apic() {
 
     assert!(unsafe { local_apic.is_bsp() });
 
-    LOCAL_APIC.call_once(move || Mutex::new(local_apic));
+    LOCAL_APIC.call_once(move || local_apic);
 }
 
-pub static IO_APICS: Once<Mutex<IoApics>> = Once::new();
+pub static IO_APICS: Once<IoApics> = Once::new();
 
 fn init_io_apics(
     mapper: &mut impl Mapper<Size4KiB>,
@@ -118,7 +118,7 @@ fn init_io_apics(
         io_apics.enable_irq(IOApicInt::COM1);
         println!("IRQ {:#?} enabled", IOApicInt::COM1);
 
-        Mutex::new(io_apics)
+        io_apics
     });
 
     println!("I/O apics initialized");
