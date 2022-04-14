@@ -1,4 +1,7 @@
-use x86_64::VirtAddr;
+use x86_64::{
+    structures::paging::{PageSize, Size4KiB},
+    VirtAddr,
+};
 
 pub const PHYS_OFFSET: VirtAddr = unsafe { VirtAddr::new_unsafe(0x0000_4000_0000_0000) };
 
@@ -9,6 +12,10 @@ pub const LOCAL_APIC_ID: u8 = 0;
 pub const LOCAL_APIC_TIMER_INIT_COUNT: u32 = u32::MAX;
 
 pub const HPET_INTERVAL: u32 = 10; // 10ms
+
+pub const HEAP_START: u64 = 0x0004_4444_4440 * Size4KiB::SIZE;
+pub const HEAP_SIZE: u64 = 4 * 1024 * Size4KiB::SIZE; /* 16 MiB */
+pub const HEAP_END: u64 = HEAP_START + HEAP_SIZE - 1;
 
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]

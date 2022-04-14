@@ -1,27 +1,32 @@
 #![no_std]
+#![no_main]
 #![feature(
     abi_x86_interrupt,
     alloc_error_handler,
     const_mut_refs,
     type_alias_impl_trait
 )]
-#![cfg_attr(test, no_main)]
 #![cfg_attr(test, feature(custom_test_frameworks))]
 #![cfg_attr(test, test_runner(test_runner))]
 #![cfg_attr(test, reexport_test_harness_main = "test_main")]
 
 extern crate alloc;
 
-mod acpi;
-mod allocator;
-mod apic;
+pub mod acpi;
+pub mod allocator;
+pub mod apic;
 pub mod constant;
 pub mod gdt;
-mod interrupt;
-mod memory;
+pub mod interrupt;
+pub mod memory;
 pub mod uart;
 
-use {bootloader::BootInfo, constant::PHYS_OFFSET, core::panic::PanicInfo, qemu_exit::QEMUExit};
+pub use {
+    bootloader::{entry_point, BootInfo},
+    qemu_exit::QEMUExit,
+};
+
+use {constant::PHYS_OFFSET, core::panic::PanicInfo};
 
 pub fn init(boot_info: &'static mut BootInfo) {
     uart::init();
@@ -65,17 +70,7 @@ fn panic(info: &PanicInfo) -> ! {
 
 /* ---------- Testing ---------- */
 
-#[cfg(test)]
-bootloader::entry_point!(test_kernel_main);
-
 pub const QEMU_EXIT_HANDLE: qemu_exit::X86 = qemu_exit::X86::new(0xf4, 0x21);
-
-#[cfg(test)]
-fn test_kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    init(boot_info);
-    test_main();
-    QEMU_EXIT_HANDLE.exit_failure();
-}
 
 pub fn test_runner(tests: &[&dyn Testable]) {
     println!("running {} tests", tests.len());

@@ -1,14 +1,15 @@
 #![no_std]
 #![no_main]
 #![feature(abi_x86_interrupt, custom_test_frameworks)]
-#![test_runner(ingram::test_runner)]
+#![test_runner(ingram_kernel::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 use {
-    bootloader::{entry_point, BootInfo},
     core::ptr::read_volatile,
-    ingram::{constant::DOUBLE_FAULT_IST_INDEX, gdt, println, QEMU_EXIT_HANDLE},
-    qemu_exit::QEMUExit,
+    ingram_kernel::{
+        constant::DOUBLE_FAULT_IST_INDEX, entry_point, gdt, println, uart, BootInfo, QEMUExit,
+        QEMU_EXIT_HANDLE,
+    },
     spin::Lazy,
     x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
 };
@@ -16,6 +17,7 @@ use {
 entry_point!(test_kernel_main);
 
 fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
+    uart::init();
     gdt::init();
     IDT.load();
 

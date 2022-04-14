@@ -6,23 +6,16 @@ authors = ["YXL76 <chenxin.lan.76@gmail.com>"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 
+[workspace]
+members = ["kernel"]
+resolver = "2"
+
 [dependencies]
-acpi = "4.1"
-bit_field = "0.10"
-qemu-exit = "3.0"
+ingram-kernel = { path = "./kernel" }
+
+[dev-dependencies]
 spin = "0.9"
-uart_16550 = "0.2"
-x2apic = "0.4"
 x86_64 = "0.14"
-
-[dependencies.bootloader]
-git = "https://github.com/YXL76/bootloader"
-branch = "ingram"
-
-[package.metadata.bootloader]
-map-physical-memory = true
-physical-memory-offset = 0x0000_4000_0000_0000
-map-framebuffer = false
 
 [profile.release]
 lto = true

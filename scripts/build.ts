@@ -17,6 +17,7 @@ const PKG = "ingram";
 const TARGET = "x86_64-unknown-none";
 
 export const ROOT_DIR = Deno.cwd();
+const KERNEL_DIR = join(ROOT_DIR, "kernel");
 const TARGET_DIR = join(ROOT_DIR, "target");
 const TARGET_BIN_DIR = join(TARGET_DIR, TARGET, MODE);
 
@@ -44,6 +45,9 @@ export const images = await (async () => {
         const json = JSON.parse(line) as { executable?: null | string };
         if (typeof json.executable !== "string") continue;
         if (json.executable === mainBin) continue;
+        if (json.executable.startsWith(`${TARGET_BIN_DIR}/deps/${PKG}-`)) {
+          continue;
+        }
 
         kernelBinaryPaths.push(json.executable);
       }
@@ -68,7 +72,7 @@ export const images = await (async () => {
 async function createDiskImages(kernelBinaryPaths: string[]) {
   console.log("Creating disk images...");
 
-  const kernelManifest = join(ROOT_DIR, "Cargo.toml");
+  const kernelManifest = join(KERNEL_DIR, "Cargo.toml");
 
   const images = [];
   for (const kernelBinary of kernelBinaryPaths) {
@@ -109,6 +113,7 @@ async function locateBootloader() {
     cmd: ["cargo", "metadata", "--format-version", "1"],
     stdout: "piped",
     stderr: "piped",
+    cwd: KERNEL_DIR,
   });
   const status = await cmd.status();
   if (!status.success) {

@@ -45,12 +45,12 @@ pub fn init(
     init_local_apic();
     init_io_apics(mapper, frame_allocator, &apic);
     init_hpet(mapper, frame_allocator, &hpet_info);
+    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).enable() }; // Must be called after [init_hpet]
 
-    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).enable() };
     nmi_enable();
     interrupts::enable();
-    // wait for [crete::interrupt::io_apic_timer_handler]
-    x86_64::instructions::hlt();
+    x86_64::instructions::hlt(); // wait for [crete::interrupt::io_apic_timer_handler]
+
     println!("Local apic enabled");
     println!("Interrupts enabled");
 }
