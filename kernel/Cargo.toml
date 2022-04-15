@@ -19,4 +19,5 @@ branch = "ingram"
 [package.metadata.bootloader]
 map-physical-memory = true
 physical-memory-offset = 0x0000_4000_0000_0000
+kernel-stack-size = 0x000A_0000                # 160KiB
 map-framebuffer = false

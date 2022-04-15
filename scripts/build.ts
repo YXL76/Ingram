@@ -112,13 +112,9 @@ async function locateBootloader() {
   const cmd = Deno.run({
     cmd: ["cargo", "metadata", "--format-version", "1"],
     stdout: "piped",
-    stderr: "piped",
+    stderr: "inherit",
     cwd: KERNEL_DIR,
   });
-  const status = await cmd.status();
-  if (!status.success) {
-    throw new Error(textDecoder.decode(await cmd.stderrOutput()));
-  }
 
   const metadata = JSON.parse(textDecoder.decode(await cmd.output())) as {
     packages: { id: string; manifest_path: string }[];

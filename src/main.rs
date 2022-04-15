@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(format_args_nl)]
 #![cfg_attr(test, feature(custom_test_frameworks))]
 #![cfg_attr(test, test_runner(ingram_kernel::test_runner))]
 #![cfg_attr(test, reexport_test_harness_main = "test_main")]
@@ -16,11 +17,23 @@ entry_point!(test_kernel_main);
 
 #[cfg(not(test))]
 pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    use ingram_kernel::{hlt_loop, init};
+    use {
+        boa_engine::Context,
+        ingram_kernel::{hlt_loop, init},
+    };
 
     init(boot_info);
 
     println!("Hello World!");
+    let mut context = Context::default();
+    println!(
+        "{}",
+        context
+            .eval("'Hello World from Javascript!'")
+            .unwrap()
+            .to_string(&mut context)
+            .unwrap()
+    );
 
     hlt_loop();
 }
@@ -29,6 +42,28 @@ pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 pub fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     use ingram_kernel::{uart, QEMUExit, QEMU_EXIT_HANDLE};
     uart::init();
+    print!("");
     test_main();
     QEMU_EXIT_HANDLE.exit_success()
+}
+
+pub mod fmin {
+    #[no_mangle]
+    pub extern "C" fn fmin(x: f64, y: f64) -> f64 {
+        libm::fmin(x, y)
+    }
+}
+
+pub mod fmax {
+    #[no_mangle]
+    pub extern "C" fn fmax(x: f64, y: f64) -> f64 {
+        libm::fmax(x, y)
+    }
+}
+
+pub mod fmod {
+    #[no_mangle]
+    pub extern "C" fn fmod(x: f64, y: f64) -> f64 {
+        libm::fmod(x, y)
+    }
 }

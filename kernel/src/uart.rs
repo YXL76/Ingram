@@ -31,6 +31,7 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     () => ($crate::print!("\n"));
-    ($fmt:expr) => ($crate::print!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => ($crate::print!(concat!($fmt, "\n"), $($arg)*));
+    ($($arg:tt)*) => ({
+        $crate::uart::_print(format_args_nl!($($arg)*));
+    })
 }

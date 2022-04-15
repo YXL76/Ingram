@@ -4,6 +4,7 @@
     abi_x86_interrupt,
     alloc_error_handler,
     const_mut_refs,
+    format_args_nl,
     type_alias_impl_trait
 )]
 #![cfg_attr(test, feature(custom_test_frameworks))]
