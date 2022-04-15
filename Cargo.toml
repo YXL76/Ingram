@@ -11,10 +11,13 @@ members = ["kernel"]
 resolver = "2"
 
 [dependencies]
-boa_engine = { path = "./boa/boa_engine" }
 ingram-kernel = { path = "./kernel" }
 
 libm = "0.2"
+
+[dependencies.boa_engine]
+path = "./boa/boa_engine"
+features = ["nightly"]
 
 [dev-dependencies]
 spin = "0.9"

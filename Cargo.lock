@@ -68,7 +68,7 @@ dependencies = [
  "fast-float",
  "float-cmp",
  "gc",
- "hashbrown 0.12.0",
+ "hashbrown",
  "indexmap",
  "ingram-kernel",
  "jemallocator",
@@ -166,7 +166,7 @@ version = "0.4.1"
 source = "git+https://github.com/YXL76/rust-gc?branch=no_std#f3b9a33d9a9b83c38387f6aee2cdd1eefedce9b8"
 dependencies = [
  "gc_derive",
- "hashbrown 0.12.0",
+ "hashbrown",
  "serde",
  "spin",
 ]
@@ -195,12 +195,6 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
-
-[[package]]
-name = "hashbrown"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c21d40587b92fa6a6c6e3c1bdbf87d75511db5672f9c93175574b3a00df1758"
@@ -210,12 +204,10 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f647032dfaa1f8b6dc29bd3edb7bbef4861b8b8007ebb118d6db284fd59f6ee"
+version = "2.0.0-pre"
+source = "git+https://github.com/bluss/indexmap#a31003c670ec05ddcaea7bdffd41cf4afe0cd7f5"
 dependencies = [
- "autocfg",
- "hashbrown 0.11.2",
+ "hashbrown",
 ]
 
 [[package]]
@@ -462,9 +454,9 @@ dependencies = [
 [[package]]
 name = "regress"
 version = "0.4.1"
-source = "git+https://github.com/YXL76/regress?branch=no_std#6c27cc670b330f127f5cce693db522cf8a7c98c5"
+source = "git+https://github.com/YXL76/regress?branch=ingram#408be0d8476a287b35e61dfeda3a21d3a2ef2717"
 dependencies = [
- "hashbrown 0.12.0",
+ "hashbrown",
  "memchr",
 ]
 
@@ -556,10 +548,10 @@ dependencies = [
 [[package]]
 name = "string-interner"
 version = "0.14.0"
-source = "git+https://github.com/Robbepop/string-interner#95574e27c0cda19113ab27dc1e8a5f9f9fa5ab8a"
+source = "git+https://github.com/yxl76/string-interner?branch=ingram#7166b11cadcccb9a710eaca53c47c2706887901c"
 dependencies = [
  "cfg-if",
- "hashbrown 0.12.0",
+ "hashbrown",
  "serde",
 ]
 
