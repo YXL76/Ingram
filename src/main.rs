@@ -47,6 +47,8 @@ pub fn test_kernel_main(_boot_info: &'static mut BootInfo) -> ! {
     QEMU_EXIT_HANDLE.exit_success()
 }
 
+/// See https://github.com/rust-lang/libm/issues/258
+/// Copies from https://github.com/rust-lang/compiler-builtins/blob/19d53ba6d86fe64b89f28dc8dba02eeffb15c8f8/src/math.rs
 pub mod fmin {
     #[no_mangle]
     pub extern "C" fn fmin(x: f64, y: f64) -> f64 {
@@ -54,6 +56,8 @@ pub mod fmin {
     }
 }
 
+/// See https://github.com/rust-lang/libm/issues/258
+/// Copies from https://github.com/rust-lang/compiler-builtins/blob/19d53ba6d86fe64b89f28dc8dba02eeffb15c8f8/src/math.rs
 pub mod fmax {
     #[no_mangle]
     pub extern "C" fn fmax(x: f64, y: f64) -> f64 {
@@ -61,6 +65,8 @@ pub mod fmax {
     }
 }
 
+/// See https://github.com/rust-lang/libm/issues/258
+/// Copies from https://github.com/rust-lang/compiler-builtins/blob/19d53ba6d86fe64b89f28dc8dba02eeffb15c8f8/src/math.rs
 pub mod fmod {
     #[no_mangle]
     pub extern "C" fn fmod(x: f64, y: f64) -> f64 {
