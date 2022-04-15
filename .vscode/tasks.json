@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build (Debug)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/build.ts"
+    },
+    {
+      "label": "Build (Release)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/build.ts --release"
+    },
+    {
+      "label": "Run (Debug)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/run.ts"
+    },
+    {
+      "label": "Run (Release)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/run.ts --release"
+    },
+    {
+      "label": "Test (Debug)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/run.ts --test"
+    },
+    {
+      "label": "Test (Release)",
+      "type": "shell",
+      "command": "deno run --unstable --allow-all scripts/run.ts --test --release"
+    }
+  ]
+}
