@@ -23,8 +23,9 @@ pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     };
 
     init(boot_info);
-
     println!("Hello World!");
+
+    boa_engine::init();
     let mut context = Context::default();
     println!(
         "{}",
