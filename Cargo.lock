@@ -142,8 +142,7 @@ checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
 [[package]]
 name = "fast-float"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95765f67b4b18863968b4a1bd5bb576f732b29a4a28c7cd84c09fa3e2875f33c"
+source = "git+https://github.com/quartiq/fast-float-rust?branch=lib-no-std#98e5781ab2e24d2ad40065e4063bccd06cc68470"
 
 [[package]]
 name = "float-cmp"

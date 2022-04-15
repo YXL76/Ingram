@@ -23,6 +23,9 @@ features = ["nightly"]
 spin = "0.9"
 x86_64 = "0.14"
 
+[patch.crates-io]
+fast-float = { git = "https://github.com/quartiq/fast-float-rust", branch = "lib-no-std" }
+
 [profile.release]
 codegen-units = 1
 lto = true
