@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(custom_test_frameworks)]
+#![feature(custom_test_frameworks, format_args_nl)]
 #![test_runner(ingram_kernel::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
