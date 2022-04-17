@@ -17,7 +17,7 @@ libm = "0.2"
 
 [dependencies.boa_engine]
 path = "./boa/boa_engine"
-features = ["nightly"]
+features = ["console", "nightly"]
 
 [dev-dependencies]
 spin = "0.9"

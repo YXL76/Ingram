@@ -35,3 +35,11 @@ macro_rules! println {
         $crate::uart::_print(format_args_nl!($($arg)*));
     })
 }
+
+#[macro_export]
+macro_rules! eprintln {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ({
+        $crate::uart::_print(format_args_nl!($($arg)*));
+    })
+}
