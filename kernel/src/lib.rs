@@ -27,29 +27,7 @@ pub use {
     qemu_exit::QEMUExit,
 };
 
-use {constant::PHYS_OFFSET, core::panic::PanicInfo};
-
-pub fn init(boot_info: &'static mut BootInfo) {
-    uart::init();
-
-    assert_eq!(
-        PHYS_OFFSET.as_u64(),
-        boot_info.physical_memory_offset.into_option().unwrap()
-    );
-    let rsdp_addr = boot_info.rsdp_addr.into_option().unwrap();
-
-    gdt::init();
-
-    interrupt::init();
-
-    let (mut mapper, mut frame_allocator) = unsafe { memory::init(&boot_info.memory_regions) };
-
-    allocator::init(&mut mapper, &mut frame_allocator);
-
-    let (hpet_info, apic) = acpi::init(rsdp_addr);
-
-    apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
-}
+use core::panic::PanicInfo;
 
 pub fn hlt_loop() -> ! {
     loop {

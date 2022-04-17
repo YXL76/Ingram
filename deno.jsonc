@@ -4,7 +4,7 @@
   },
   "lint": {
     "files": {
-      "include": ["scripts/"]
+      "include": ["scripts/", "kernel/js/"]
     },
     "rules": {
       "tags": ["recommended"],
@@ -20,7 +20,7 @@
   },
   "fmt": {
     "files": {
-      "include": ["scripts/"]
+      "include": ["scripts/", "kernel/js/"]
     }
   }
 }

@@ -22,10 +22,10 @@ const cmd = [
   "-monitor", "vc:1024x768",
   // Disable display
   "-display", "none",
-  //  prevent attempting a PXE (network) boot when no boot disk is found
+  // Prevent attempting a PXE (network) boot when no boot disk is found
   "-net", "none",
   // Passthrough host CPU
-  // "-cpu", "host",
+  "-cpu", "host",
   // Only support single core
   "-smp", "1,maxcpus=1"
 ];

@@ -8,6 +8,9 @@
 #[macro_use]
 extern crate ingram_kernel;
 
+mod port;
+
+use boa_engine::JsValue;
 use ingram_kernel::{entry_point, BootInfo};
 
 #[cfg(not(test))]
@@ -18,23 +21,47 @@ entry_point!(test_kernel_main);
 #[cfg(not(test))]
 pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     use {
-        boa_engine::Context,
-        ingram_kernel::{hlt_loop, init},
+        boa_engine::{object::ObjectInitializer, property::Attribute, Context},
+        ingram_kernel::{
+            acpi, allocator, apic, constant::PHYS_OFFSET, gdt, hlt_loop, interrupt, memory, uart,
+        },
     };
 
-    init(boot_info);
+    uart::init();
+
+    assert_eq!(
+        PHYS_OFFSET.as_u64(),
+        boot_info.physical_memory_offset.into_option().unwrap()
+    );
+    let rsdp_addr = boot_info.rsdp_addr.into_option().unwrap();
+
+    gdt::init();
+    interrupt::init();
+    let (mut mapper, mut frame_allocator) = unsafe { memory::init(&boot_info.memory_regions) };
+    allocator::init(&mut mapper, &mut frame_allocator);
+    let (hpet_info, apic, fadt) = acpi::init(rsdp_addr);
+    assert_ne!(fadt.century, 0);
+    apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
+
     println!("Hello World!");
 
     boa_engine::init();
     let mut context = Context::default();
-    println!(
-        "{}",
-        context
-            .eval("'Hello World from Javascript!'")
-            .unwrap()
-            .to_string(&mut context)
-            .unwrap()
+
+    let mut kernel_obj = ObjectInitializer::new(&mut context);
+    kernel_obj.property(
+        "RTC_CENTURY_REG",
+        JsValue::Integer(fadt.century as i32),
+        Attribute::default(),
     );
+    port::init(&mut kernel_obj);
+    let kernel_obj = kernel_obj.build();
+
+    context.register_global_property("Kernel", kernel_obj, Attribute::default());
+
+    if let Err(err) = context.eval(include_bytes!("../dist/index.js")) {
+        panic!("{}", err.to_string(&mut context).unwrap());
+    }
 
     hlt_loop();
 }

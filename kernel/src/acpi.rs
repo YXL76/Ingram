@@ -2,15 +2,22 @@
 use {
     crate::{constant::LOCAL_APIC_ID, memory::phys2virt, println},
     acpi::{
+        fadt::Fadt,
         platform::{interrupt::Apic, ProcessorInfo},
-        AcpiHandler, AcpiTables, HpetInfo, InterruptModel, PciConfigRegions, PlatformInfo,
+        sdt::Signature,
+        AcpiHandler, AcpiTables, HpetInfo, InterruptModel, PciConfigRegions, PhysicalMapping,
+        PlatformInfo,
     },
     core::ptr::NonNull,
     x86_64::structures::paging::{PageSize, Size4KiB},
 };
 
-pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic) {
+pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic, PhysicalMapping<AcpiHdl, Fadt>) {
     let acpi_tables = unsafe { AcpiTables::from_rsdp(AcpiHdl, rsdp_addr as usize) }.unwrap();
+
+    let fadt = unsafe { acpi_tables.get_sdt::<Fadt>(Signature::FADT) }
+        .unwrap()
+        .unwrap();
 
     let pci_config_regions = PciConfigRegions::new(&acpi_tables).unwrap();
     println!("PCI: {:?}", pci_config_regions);
@@ -37,24 +44,25 @@ pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic) {
             InterruptModel::Apic(apic) => apic,
             _ => panic!("apic not supported"),
         },
+        fadt,
     )
 }
 
 #[derive(Clone)]
-struct AcpiHdl;
+pub struct AcpiHdl;
 
 impl AcpiHandler for AcpiHdl {
     unsafe fn map_physical_region<T>(
         &self,
         physical_address: usize,
         size: usize,
-    ) -> acpi::PhysicalMapping<Self, T> {
+    ) -> PhysicalMapping<Self, T> {
         let page_size = Size4KiB::SIZE as usize;
         // address maybe not aligned, so we align it manually
         let aligned_start = physical_address & !(page_size - 1);
         let aligned_end = (physical_address + size + page_size - 1) & !(page_size - 1);
 
-        acpi::PhysicalMapping::new(
+        PhysicalMapping::new(
             physical_address,
             NonNull::new_unchecked(phys2virt(physical_address as u64).as_u64() as *mut _),
             size,
