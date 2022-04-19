@@ -16,6 +16,10 @@ const enum COMMOM_OFFSET {
   HEADER_TYPE = 0x0C,
 }
 
+const enum HEADER_TYPE_00_OFFSET {
+  SUBSYSTEM_ID = 0x2C,
+}
+
 const enum HEADER_TYPE_01_OFFSET {
   SECONDARY_BUS = 0x18,
 }
@@ -25,6 +29,10 @@ function getData(bus: number, device: number, func: number, offset: number) {
     0x80000000;
   Kernel.outl(PCI.CONFIG_ADDRESS, addr);
   return Kernel.inl(PCI.CONFIG_DATA);
+}
+
+function getDeviceID(bus: number, device: number, func: number) {
+  return getData(bus, device, func, COMMOM_OFFSET.DEVICE_ID) >> 16;
 }
 
 function getVendorID(bus: number, device: number, func: number) {
@@ -52,6 +60,10 @@ function getProgIF(bus: number, device: number, func: number) {
   return (getData(bus, device, func, COMMOM_OFFSET.PROG_IF) >> 8) & 0xFF;
 }
 
+function getSubsystemID(bus: number, device: number, func: number) {
+  return getData(bus, device, func, HEADER_TYPE_00_OFFSET.SUBSYSTEM_ID) >> 16;
+}
+
 function getSecondaryBus(bus: number, device: number, func: number) {
   return (getData(bus, device, func, HEADER_TYPE_01_OFFSET.SECONDARY_BUS) >>
     8) & 0xFF;
@@ -74,8 +86,7 @@ function checkDevice(bus: number, device: number) {
 function checkFunction(bus: number, device: number, func: number) {
   const baseClass = getBaseClass(bus, device, func);
   const subClass = getSubClass(bus, device, func);
-  const progIF = getProgIF(bus, device, func);
-  console.log(bus, device, func, baseClass, subClass, progIF);
+  console.log(baseClass, subClass, getProgIF(bus, device, func));
 
   if ((baseClass === 0x6) && (subClass === 0x4)) {
     const secondaryBus = getSecondaryBus(bus, device, func);

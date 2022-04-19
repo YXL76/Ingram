@@ -9,10 +9,10 @@ fn port_in<T: PortRead + Into<i32>>(
     args: &[JsValue],
     context: &mut Context,
 ) -> JsResult<JsValue> {
-    let port = match args.get(0) {
-        Some(port) => port.to_uint16(context),
-        None => context.throw_type_error("missing port"),
-    }?;
+    let port = args
+        .get(0)
+        .ok_or(context.construct_type_error("missing port"))?
+        .to_uint16(context)?;
 
     let mut port = PortReadOnly::<T>::new(port);
     let value = unsafe { port.read() };
@@ -28,14 +28,15 @@ fn port_out<T: PortWrite + TryFrom<u32> + Default>(
 where
     T::Error: Debug,
 {
-    let port = match args.get(0) {
-        Some(port) => port.to_uint16(context),
-        None => context.throw_type_error("missing port"),
-    }?;
-    let value = match args.get(1) {
-        Some(port) => port.to_u32(context),
-        None => context.throw_type_error("missing value"),
-    }?;
+    let port = args
+        .get(0)
+        .ok_or(context.construct_type_error("missing port"))?
+        .to_uint16(context)?;
+
+    let value = args
+        .get(1)
+        .ok_or(context.construct_type_error("missing port"))?
+        .to_u32(context)?;
 
     let mut port = PortWriteOnly::<T>::new(port);
     unsafe { port.write(T::try_from(value).unwrap()) };
@@ -49,11 +50,11 @@ pub fn init(obj: &mut ObjectInitializer) {
         .function(port_in::<u16>, "inw", 1)
         .function(port_out::<u16>, "outw", 2)
         .function(
-            |_this: &JsValue, args: &[JsValue], context: &mut Context| {
-                let port = match args.get(0) {
-                    Some(port) => port.to_uint16(context),
-                    None => context.throw_type_error("missing port"),
-                }?;
+            |_this, args, context| {
+                let port = args
+                    .get(0)
+                    .ok_or(context.construct_type_error("missing port"))?
+                    .to_uint16(context)?;
 
                 let mut port = PortReadOnly::<u32>::new(port);
                 let value = unsafe { port.read() };

@@ -14,14 +14,21 @@ resolver = "2"
 ingram-kernel = { path = "./kernel" }
 
 libm = "0.2"
+spin = "0.9"
 x86_64 = "0.14"
 
 [dependencies.boa_engine]
 path = "./boa/boa_engine"
 features = ["console", "nightly"]
 
-[dev-dependencies]
-spin = "0.9"
+[dependencies.boa_gc]
+path = "./boa/boa_gc"
+features = ["nightly"]
+
+[dependencies.gc]
+git = "https://github.com/YXL76/rust-gc"
+branch = "no_std"
+features = ["nightly"]
 
 [patch.crates-io]
 fast-float = { git = "https://github.com/quartiq/fast-float-rust", branch = "lib-no-std" }

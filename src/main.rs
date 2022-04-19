@@ -7,10 +7,12 @@
 
 #[macro_use]
 extern crate ingram_kernel;
+extern crate alloc;
 
 mod port;
+mod process;
+mod rtc;
 
-use boa_engine::JsValue;
 use ingram_kernel::{entry_point, BootInfo};
 
 #[cfg(not(test))]
@@ -20,11 +22,8 @@ entry_point!(test_kernel_main);
 
 #[cfg(not(test))]
 pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
-    use {
-        boa_engine::{object::ObjectInitializer, property::Attribute, Context},
-        ingram_kernel::{
-            acpi, allocator, apic, constant::PHYS_OFFSET, gdt, hlt_loop, interrupt, memory, uart,
-        },
+    use ingram_kernel::{
+        acpi, allocator, apic, constant::PHYS_OFFSET, gdt, interrupt, memory, uart,
     };
 
     uart::init();
@@ -43,27 +42,67 @@ pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     assert_ne!(fadt.century, 0);
     apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
 
-    println!("Hello World!");
+    println!("██╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ███╗");
+    println!("██║████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗ ████║");
+    println!("██║██╔██╗ ██║██║  ███╗██████╔╝███████║██╔████╔██║");
+    println!("██║██║╚██╗██║██║   ██║██╔══██╗██╔══██║██║╚██╔╝██║");
+    println!("██║██║ ╚████║╚██████╔╝██║  ██║██║  ██║██║ ╚═╝ ██║");
+    println!("╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝");
+
+    js_kernel_main(fadt.century)
+}
+
+pub fn js_kernel_main(century: u8) -> ! {
+    use {
+        boa_engine::{
+            object::{JsObject, ObjectData, ObjectInitializer},
+            property::Attribute,
+            Context, JsValue,
+        },
+        process::KERNEL_MICROTASKS,
+    };
 
     boa_engine::init();
     let mut context = Context::default();
 
-    let mut kernel_obj = ObjectInitializer::new(&mut context);
-    kernel_obj.property(
-        "RTC_CENTURY_REG",
-        JsValue::Integer(fadt.century as i32),
-        Attribute::default(),
-    );
-    port::init(&mut kernel_obj);
-    let kernel_obj = kernel_obj.build();
+    let mut kernel = ObjectInitializer {
+        context: &mut context,
+        object: JsObject::from_proto_and_data(None, ObjectData::ordinary()),
+    };
 
-    context.register_global_property("Kernel", kernel_obj, Attribute::default());
+    rtc::init(&mut kernel, century);
+    port::init(&mut kernel);
+    process::init(&mut kernel);
+    let kernel = kernel.build();
+
+    context.register_global_property("Kernel", kernel, Attribute::default());
+    context.register_global_builtin_function("queueMicrotask", 1, |_this, args, context| {
+        let f = args
+            .get(0)
+            .and_then(|code| code.as_object())
+            .ok_or(context.construct_type_error("missing func"))?
+            .clone();
+
+        unsafe { KERNEL_MICROTASKS.get_unchecked() }
+            .lock()
+            .push_back(f);
+
+        Ok(JsValue::undefined())
+    });
 
     if let Err(err) = context.eval(include_bytes!("../dist/index.js")) {
         panic!("{}", err.to_string(&mut context).unwrap());
     }
 
-    hlt_loop();
+    while let Some(f) = (|| {
+        unsafe { KERNEL_MICROTASKS.get_unchecked() }
+            .lock()
+            .pop_front()
+    })() {
+        let _ = f.call(&JsValue::null(), &[], &mut context).unwrap();
+    }
+
+    ingram_kernel::hlt_loop();
 }
 
 #[cfg(test)]

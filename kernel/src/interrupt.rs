@@ -7,14 +7,20 @@ use {
             IOApicInt, LocalApicInt, DOUBLE_FAULT_IST_INDEX, HPET_INTERVAL,
             LOCAL_APIC_TIMER_INIT_COUNT,
         },
-        print, println,
+        println,
         uart::SERIAL1,
     },
     spin::Lazy,
     x86_64::{
-        instructions::port::Port,
+        instructions::{
+            port::Port,
+            segmentation::{Segment, DS},
+        },
         set_general_handler,
-        structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
+        structures::{
+            gdt::SegmentSelector,
+            idt::{InterruptDescriptorTable, InterruptStackFrame},
+        },
     },
 };
 
@@ -78,7 +84,7 @@ extern "x86-interrupt" fn io_apic_com1_handler(_stack_frame: InterruptStackFrame
 }
 
 extern "x86-interrupt" fn local_apic_timer_handler(_stack_frame: InterruptStackFrame) {
-    print!(".");
+    unsafe { DS::set_reg(SegmentSelector(1)) };
     unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).end_of_interrupt() };
 }
 

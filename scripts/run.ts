@@ -1,4 +1,5 @@
-import { images, join, ROOT_DIR, TEST } from "./build.ts";
+import { join, ROOT_DIR, TEST } from "./env.ts";
+import { images } from "./build.ts";
 
 /** Follow {@link https://gil0mendes.io/blog/an-efi-app-a-bit-rusty/} */
 // deno-fmt-ignore

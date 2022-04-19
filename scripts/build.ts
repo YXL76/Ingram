@@ -2,34 +2,25 @@ import {
   basename,
   dirname,
   join,
-} from "https://deno.land/std@0.133.0/path/mod.ts";
+  KERNEL_DIR,
+  PKG,
+  PROD,
+  TARGET_BIN_DIR,
+  TARGET_DIR,
+  TEST,
+} from "./env.ts";
 import { buildjs } from "./build_js.ts";
-
-export { join };
 
 const textDecoder = new TextDecoder();
 
-export const TEST = Deno.args.includes("--test");
-const MODE: "debug" | "release" = Deno.args.includes("--release")
-  ? "release"
-  : "debug";
-
-buildjs(MODE === "release");
-
-const PKG = "ingram";
-const TARGET = "x86_64-unknown-none";
-
-export const ROOT_DIR = Deno.cwd();
-const KERNEL_DIR = join(ROOT_DIR, "kernel");
-const TARGET_DIR = join(ROOT_DIR, "target");
-const TARGET_BIN_DIR = join(TARGET_DIR, TARGET, MODE);
+buildjs();
 
 export const images = await (async () => {
   {
     const cmd = ["cargo"];
     if (TEST) cmd.push("test", "--no-run");
     else cmd.push("build");
-    if (MODE === "release") cmd.push("--release");
+    if (PROD) cmd.push("--release");
 
     const build = Deno.run({ cmd, stdout: "inherit", stderr: "inherit" });
     if (!(await build.status()).success) throw new Error("build failed");

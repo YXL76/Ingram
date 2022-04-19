@@ -9,8 +9,15 @@ interface IKernel {
   outw: (port: number, value: number) => void;
   inl: (port: number) => number;
   outl: (port: number, value: number) => void;
+
+  spawn: (code: ArrayBuffer) => Process;
+  shouldSchedule: () => boolean;
 }
 
 declare global {
   const Kernel: IKernel;
+}
+
+interface Process {
+  steps(): boolean;
 }

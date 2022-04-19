@@ -3,7 +3,7 @@ use {
     spin::Lazy,
     x86_64::{
         instructions::{
-            segmentation::{Segment, CS, DS, ES, SS},
+            segmentation::{Segment, CS, SS},
             tables::load_tss,
         },
         structures::{
@@ -20,8 +20,8 @@ pub fn init() {
     unsafe {
         CS::set_reg(GDT.1.code);
         SS::set_reg(GDT.1.data);
-        DS::set_reg(GDT.1.data);
-        ES::set_reg(GDT.1.data);
+        // DS::set_reg(GDT.1.data);
+        // ES::set_reg(GDT.1.data);
         load_tss(GDT.1.tss);
     }
 
