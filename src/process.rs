@@ -1,5 +1,5 @@
 use {
-    alloc::{boxed::Box, collections::VecDeque},
+    alloc::boxed::Box,
     boa_engine::{
         object::{JsObject, ObjectData, ObjectInitializer},
         property::Attribute,
@@ -11,7 +11,8 @@ use {
         cell::RefCell,
         sync::atomic::{AtomicI32, Ordering},
     },
-    spin::{Mutex, Once},
+    crossbeam_queue::ArrayQueue,
+    spin::Once,
     x86_64::{
         instructions::segmentation::{Segment, DS},
         structures::gdt::SegmentSelector,
@@ -26,7 +27,7 @@ pub struct Process {
     pub id: i32,
     /// `None` if the process is dead
     pub ctx: RefCell<Option<Context>>,
-    pub microtasks: VecDeque<JsObject>,
+    // pub microtasks: VecDeque<JsObject>,
 }
 
 unsafe impl Trace for Process {
@@ -54,7 +55,7 @@ impl Process {
             Self {
                 id,
                 ctx: RefCell::new(None),
-                microtasks: VecDeque::new(),
+                // microtasks: VecDeque::new(),
             },
             context,
         ))
@@ -106,10 +107,10 @@ where
     Ok(proc)
 }
 
-pub static KERNEL_MICROTASKS: Once<Mutex<VecDeque<JsObject>>> = Once::new();
+pub static KERNEL_MICROTASKS: Once<ArrayQueue<JsObject>> = Once::new();
 
 pub fn init(obj: &mut ObjectInitializer) {
-    KERNEL_MICROTASKS.call_once(|| Mutex::new(VecDeque::with_capacity(8)));
+    KERNEL_MICROTASKS.call_once(|| ArrayQueue::new(8));
 
     obj.function(
         |_this, args, context| {

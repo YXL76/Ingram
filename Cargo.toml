@@ -21,6 +21,11 @@ x86_64 = "0.14"
 path = "./boa/boa_engine"
 features = ["console", "nightly"]
 
+[dependencies.crossbeam-queue]
+version = "0.3"
+default-features = false
+features = ["alloc", "nightly"]
+
 [dependencies.boa_gc]
 path = "./boa/boa_gc"
 features = ["nightly"]

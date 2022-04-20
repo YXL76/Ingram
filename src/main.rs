@@ -84,8 +84,8 @@ pub fn js_kernel_main(century: u8) -> ! {
             .clone();
 
         unsafe { KERNEL_MICROTASKS.get_unchecked() }
-            .lock()
-            .push_back(f);
+            .push(f)
+            .unwrap();
 
         Ok(JsValue::undefined())
     });
@@ -94,11 +94,7 @@ pub fn js_kernel_main(century: u8) -> ! {
         panic!("{}", err.to_string(&mut context).unwrap());
     }
 
-    while let Some(f) = (|| {
-        unsafe { KERNEL_MICROTASKS.get_unchecked() }
-            .lock()
-            .pop_front()
-    })() {
+    while let Some(f) = unsafe { KERNEL_MICROTASKS.get_unchecked() }.pop() {
         let _ = f.call(&JsValue::null(), &[], &mut context).unwrap();
     }
 
