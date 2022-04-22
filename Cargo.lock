@@ -67,7 +67,6 @@ dependencies = [
  "dyn-clone",
  "fast-float",
  "float-cmp",
- "gc",
  "hashbrown",
  "indexmap",
  "ingram-kernel",
@@ -86,17 +85,20 @@ dependencies = [
 
 [[package]]
 name = "boa_gc"
-version = "0.14.0"
+version = "0.4.1"
 dependencies = [
- "gc",
- "measureme",
+ "gc_derive",
+ "hashbrown",
+ "serde",
+ "serde_json",
+ "spin",
 ]
 
 [[package]]
 name = "boa_interner"
 version = "0.14.0"
 dependencies = [
- "gc",
+ "boa_gc",
  "serde",
  "string-interner",
 ]
@@ -179,20 +181,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2022715d62ab30faffd124d40b76f4134a550a87792276512b18d63272333394"
 
 [[package]]
-name = "gc"
-version = "0.4.1"
-source = "git+https://github.com/YXL76/rust-gc?branch=no_std#f3b9a33d9a9b83c38387f6aee2cdd1eefedce9b8"
-dependencies = [
- "gc_derive",
- "hashbrown",
- "serde",
- "spin",
-]
-
-[[package]]
 name = "gc_derive"
 version = "0.4.1"
-source = "git+https://github.com/YXL76/rust-gc?branch=no_std#f3b9a33d9a9b83c38387f6aee2cdd1eefedce9b8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -235,7 +225,6 @@ dependencies = [
  "boa_engine",
  "boa_gc",
  "crossbeam-queue",
- "gc",
  "ingram-kernel",
  "libm",
  "spin",

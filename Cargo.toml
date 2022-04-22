@@ -27,12 +27,7 @@ default-features = false
 features = ["alloc", "nightly"]
 
 [dependencies.boa_gc]
-path = "./boa/boa_gc"
-features = ["nightly"]
-
-[dependencies.gc]
-git = "https://github.com/YXL76/rust-gc"
-branch = "no_std"
+path = "./rust-gc/gc"
 features = ["nightly"]
 
 [patch.crates-io]
