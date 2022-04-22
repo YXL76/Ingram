@@ -2,3 +2,7 @@
 	path = boa
 	url = https://github.com/YXL76/boa
 	branch = ingram
+[submodule "rust-gc"]
+	path = rust-gc
+	url = https://github.com/YXL76/rust-gc
+	branch = ingram
