@@ -38,9 +38,9 @@ pub fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     interrupt::init();
     let (mut mapper, mut frame_allocator) = unsafe { memory::init(&boot_info.memory_regions) };
     allocator::init(&mut mapper, &mut frame_allocator);
-    let (hpet_info, apic, fadt) = acpi::init(rsdp_addr);
+    let (pm_timer, hpet_info, apic, fadt) = acpi::init(rsdp_addr);
     assert_ne!(fadt.century, 0);
-    apic::init(&mut mapper, &mut frame_allocator, hpet_info, apic);
+    apic::init(&mut mapper, &mut frame_allocator, pm_timer, hpet_info, apic);
 
     println!("██╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███╗   ███╗");
     println!("██║████╗  ██║██╔════╝ ██╔══██╗██╔══██╗████╗ ████║");

@@ -2,11 +2,8 @@
 /// https://wiki.osdev.org/NMI
 use {
     crate::{
-        apic::{IO_APICS, LOCAL_APIC},
-        constant::{
-            IOApicInt, LocalApicInt, DOUBLE_FAULT_IST_INDEX, HPET_INTERVAL,
-            LOCAL_APIC_TIMER_INIT_COUNT,
-        },
+        apic::LOCAL_APIC,
+        constant::{IOApicInt, LocalApicInt, DOUBLE_FAULT_IST_INDEX},
         println,
         uart::SERIAL1,
     },
@@ -44,7 +41,6 @@ static IDT: Lazy<InterruptDescriptorTable> = Lazy::new(|| {
     let double_entry = idt.double_fault.set_handler_fn(double_fault_handler);
     unsafe { double_entry.set_stack_index(DOUBLE_FAULT_IST_INDEX) };
 
-    idt[IOApicInt::Timer.into()].set_handler_fn(io_apic_timer_handler);
     idt[IOApicInt::COM1.into()].set_handler_fn(io_apic_com1_handler);
 
     idt[LocalApicInt::Timer.into()].set_handler_fn(local_apic_timer_handler);
@@ -61,17 +57,6 @@ extern "x86-interrupt" fn double_fault_handler(
     _error_code: u64,
 ) -> ! {
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
-}
-
-extern "x86-interrupt" fn io_apic_timer_handler(_stack_frame: InterruptStackFrame) {
-    unsafe {
-        let local_apic = &mut *LOCAL_APIC.as_mut_ptr();
-        let diff = LOCAL_APIC_TIMER_INIT_COUNT - local_apic.timer_current(); // ticks of 20ms
-        local_apic.set_timer_initial(diff / HPET_INTERVAL * 500); // 500ms, may cause overflow
-
-        (&mut *IO_APICS.as_mut_ptr()).disable_irq(IOApicInt::Timer); // This should be called only once.
-        local_apic.end_of_interrupt();
-    };
 }
 
 extern "x86-interrupt" fn io_apic_com1_handler(_stack_frame: InterruptStackFrame) {

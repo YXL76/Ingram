@@ -3,7 +3,7 @@ use {
     crate::{constant::LOCAL_APIC_ID, memory::phys2virt, println},
     acpi::{
         fadt::Fadt,
-        platform::{interrupt::Apic, ProcessorInfo},
+        platform::{interrupt::Apic, PmTimer, ProcessorInfo},
         sdt::Signature,
         AcpiHandler, AcpiTables, HpetInfo, InterruptModel, PciConfigRegions, PhysicalMapping,
         PlatformInfo,
@@ -12,7 +12,7 @@ use {
     x86_64::structures::paging::{PageSize, Size4KiB},
 };
 
-pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic, PhysicalMapping<AcpiHdl, Fadt>) {
+pub fn init(rsdp_addr: u64) -> (PmTimer, HpetInfo, Apic, PhysicalMapping<AcpiHdl, Fadt>) {
     let acpi_tables = unsafe { AcpiTables::from_rsdp(AcpiHdl, rsdp_addr as usize) }.unwrap();
 
     let fadt = unsafe { acpi_tables.get_sdt::<Fadt>(Signature::FADT) }
@@ -26,7 +26,7 @@ pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic, PhysicalMapping<AcpiHdl, Fadt>) 
         power_profile,
         interrupt_model,
         processor_info,
-        pm_timer: _,
+        pm_timer,
     } = acpi_tables.platform_info().unwrap();
 
     println!("Power profile: {:?}", power_profile);
@@ -39,6 +39,7 @@ pub fn init(rsdp_addr: u64) -> (HpetInfo, Apic, PhysicalMapping<AcpiHdl, Fadt>) 
     assert!(app_processor.is_empty(), "Do not support multi-core");
 
     (
+        pm_timer.unwrap(),
         HpetInfo::new(&acpi_tables).unwrap(),
         match interrupt_model {
             InterruptModel::Apic(apic) => apic,

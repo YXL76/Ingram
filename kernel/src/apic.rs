@@ -13,7 +13,10 @@ use {
         memory::alloc_phys,
         println,
     },
-    acpi::{platform::interrupt::Apic, HpetInfo},
+    acpi::{
+        platform::{interrupt::Apic, PmTimer},
+        HpetInfo,
+    },
     alloc::collections::BTreeMap,
     bit_field::BitField,
     core::ptr::{read_volatile, write_volatile},
@@ -23,14 +26,20 @@ use {
         lapic::{IpiDestMode, LocalApic, LocalApicBuilder, TimerDivide, TimerMode},
     },
     x86_64::{
-        instructions::{interrupts, port::PortWriteOnly},
+        instructions::{
+            interrupts,
+            port::{PortReadOnly, PortWriteOnly},
+        },
         structures::paging::{FrameAllocator, Mapper, Size4KiB},
     },
 };
 
+const TIMER_MS: usize = 500;
+
 pub fn init(
     mapper: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
+    pm_timer: PmTimer,
     hpet_info: HpetInfo,
     apic: Apic,
 ) {
@@ -43,15 +52,19 @@ pub fn init(
     println!("PCI disabled");
 
     init_local_apic();
+    wait_on_pm_timer(&pm_timer);
+    unsafe {
+        let local_apic = &mut *LOCAL_APIC.as_mut_ptr();
+        local_apic.set_timer_initial(LOCAL_APIC_TIMER_INIT_COUNT - local_apic.timer_current());
+    };
+
     init_io_apics(mapper, frame_allocator, &apic);
     init_hpet(mapper, frame_allocator, &hpet_info);
-    unsafe { (&mut *LOCAL_APIC.as_mut_ptr()).enable() }; // Must be called after [init_hpet]
-
-    nmi_enable();
-    interrupts::enable();
-    x86_64::instructions::hlt(); // wait for [crete::interrupt::io_apic_timer_handler]
 
     println!("Local apic enabled");
+    nmi_enable();
+    interrupts::enable();
+
     println!("Interrupts enabled");
 }
 
@@ -62,7 +75,7 @@ fn init_local_apic() {
     // We assume the machine support x2apic
 
     // let xapic_base = phys2virt(apic.local_apic_address);
-    let local_apic = LocalApicBuilder::new()
+    let mut local_apic = LocalApicBuilder::new()
         .timer_vector(LocalApicInt::Timer.into())
         .error_vector(LocalApicInt::Error.into())
         .spurious_vector(LocalApicInt::Spurious.into())
@@ -75,8 +88,22 @@ fn init_local_apic() {
         .unwrap();
 
     assert!(unsafe { local_apic.is_bsp() });
+    unsafe { local_apic.enable() };
 
     LOCAL_APIC.call_once(move || local_apic);
+}
+
+/// Must be called after [`init_local_apic`]
+fn wait_on_pm_timer(pm_timer: &PmTimer) {
+    const PM_TIMER_FREQ: usize = 3579545;
+    const INTERVAL: u32 = (PM_TIMER_FREQ * TIMER_MS / 1000) as u32;
+
+    let mut timer = PortReadOnly::<u32>::new(pm_timer.base.address as u16);
+
+    let start = unsafe { timer.read() };
+    let end = start.checked_add(INTERVAL).unwrap();
+
+    while unsafe { timer.read() } < end {}
 }
 
 pub static IO_APICS: Once<IoApics> = Once::new();
@@ -113,8 +140,6 @@ fn init_io_apics(
             max_entry,
         };
 
-        io_apics.enable_irq(IOApicInt::Timer);
-        println!("IRQ {:#?} enabled", IOApicInt::Timer);
         io_apics.enable_irq(IOApicInt::COM1);
         println!("IRQ {:#?} enabled", IOApicInt::COM1);
 
@@ -177,6 +202,7 @@ fn init_hpet(
         gen_caps.get_bits(0..=7),
         gen_caps.get_bits(16..=31)
     );
+    return;
 
     let period = gen_caps.get_bits(32..=63);
     let freq = 10u64.pow(15) / period;
